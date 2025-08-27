@@ -1,11 +1,9 @@
-import random
-from unicodedata import digit
 import pandas as pd 
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer 
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report,confusion_matrix
 
 # columns that are going to be used 
 cols = ["id", "label", "statement", "true_counts", "mostly_true_counts",
@@ -60,5 +58,69 @@ model.fit(pd.concat([X_train,X_val]), pd.concat([y_train,y_val]))
 y_test_pred = model.predict(X_test)
 print(classification_report(y_test,y_test_pred, target_names=["Fake", "Real"], digits = 3))
 
+
+val_df = pd.read_csv('valid.csv')
+print(val_df.shape)
+
+val_df = val_df[cols]
+
+val_df = val_df.dropna(axis = 1, how = 'all')
+
+fake_set = {0,1,3}
+real_set = {2,4,5}
+
+ 
+binary_label = []
+
+for v in val_df["label"]:
+        if v in [2,4,5]:
+                binary_label.append(1)
+        elif v in [0,1,3]:
+                binary_label.append(0)
+        else:
+                continue  
+        
+
+val_df["binary_label"] = binary_label
+
+print(set(val_df["label"]))
+
+X_val2 = val_df["statement"].str.lower().str.strip()
+y_val2 = val_df['binary_label']
+
+
+y_val_pred2 = model.predict(X_val2)
+y_val_prob = model.predict_proba(X_val2)[:,1]
+
+print(classification_report(y_val2,y_val_pred2, target_names= ["Fake", "Real"], digits = 3 ))
+
+print(confusion_matrix(y_val2, y_val_pred2, labels=[0,1]))
+
+THRESHOLD = 0.5 
+test_df = pd.read_csv("test.csv")
+test_df = test_df[cols]
+
+test_df = test_df.dropna(axis =1, how = 'all')
+binary_label = []
+for v in test_df["label"]:
+        if v in [2,4,5]:
+                binary_label.append(1)
+        elif v in [0,1,3]:
+                binary_label.append(0)
+        else:
+                continue 
+test_df["binary_label"] = binary_label
+X_test2 = test_df["statement"].astype(str).str.lower().str.strip()
+y_test2 = test_df["binary_label"].astype(int)
+
+
+y_test_prob = model.predict_proba(X_test2)[:,1]
+
+y_pred2 = (y_test_prob >= THRESHOLD).astype(int)
+
+model.fit(pd.concat([X_train, X_val2]), pd.concat([y_train, y_val2]).astype(int))
+
+
+print(classification_report(y_test2, y_pred2, labels=[0,1], target_names=["Fake","Real"], digits=3, zero_division=0))
 
 
