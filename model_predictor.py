@@ -58,7 +58,7 @@ model.fit(pd.concat([X_train,X_val]), pd.concat([y_train,y_val]))
 y_test_pred = model.predict(X_test)
 print(classification_report(y_test,y_test_pred, target_names=["Fake", "Real"], digits = 3))
 
-
+# importing valid file 
 val_df = pd.read_csv('valid.csv')
 print(val_df.shape)
 
@@ -83,12 +83,11 @@ for v in val_df["label"]:
 
 val_df["binary_label"] = binary_label
 
-print(set(val_df["label"]))
-
+# text features 
 X_val2 = val_df["statement"].str.lower().str.strip()
 y_val2 = val_df['binary_label']
 
-
+# predicting based on model from training 
 y_val_pred2 = model.predict(X_val2)
 y_val_prob = model.predict_proba(X_val2)[:,1]
 
@@ -96,9 +95,11 @@ print(classification_report(y_val2,y_val_pred2, target_names= ["Fake", "Real"], 
 
 print(confusion_matrix(y_val2, y_val_pred2, labels=[0,1]))
 
-THRESHOLD = 0.5 
+
+# importing final set 
 test_df = pd.read_csv("test.csv")
 test_df = test_df[cols]
+
 
 test_df = test_df.dropna(axis =1, how = 'all')
 binary_label = []
@@ -110,17 +111,19 @@ for v in test_df["label"]:
         else:
                 continue 
 test_df["binary_label"] = binary_label
+# text features 
 X_test2 = test_df["statement"].astype(str).str.lower().str.strip()
 y_test2 = test_df["binary_label"].astype(int)
 
-
+# threshold for model to tell if it is fake or not  
+THRESHOLD = 0.5  
+# model predicting between 0(fake) and 1(real)  
 y_test_prob = model.predict_proba(X_test2)[:,1]
-
+# determining if its fake or real 
 y_pred2 = (y_test_prob >= THRESHOLD).astype(int)
-
+# retraining model based on training and valid
 model.fit(pd.concat([X_train, X_val2]), pd.concat([y_train, y_val2]).astype(int))
 
-
-print(classification_report(y_test2, y_pred2, labels=[0,1], target_names=["Fake","Real"], digits=3, zero_division=0))
+print(classification_report(y_test2, y_pred2, labels=[0,1], target_names=["Fake","Real"], digits=3))
 
 
